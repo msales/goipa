@@ -65,14 +65,49 @@ func (u *UserRecord) HasGroup(group string) bool {
 	return false
 }
 
+func (c *Client) UserExists(uid string) (bool, error) {
+	_, err := c.GetUser(uid)
+
+	if err == nil {
+		return true, nil
+	}
+
+	if err.(*IpaError).Code == 4001 {
+		return false, nil
+	}
+
+	return false, err
+}
+
 // Fetch user details by call the FreeIPA user-show method
-func (c *Client) UserShow(uid string) (*UserRecord, error) {
+func (c *Client) GetUser(uid string) (*UserRecord, error) {
 
 	options := map[string]interface{}{
 		"no_members": false,
 		"all":        true}
 
 	res, err := c.rpc("user_show", []string{uid}, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var userRec UserRecord
+	err = json.Unmarshal(res.Result.Data, &userRec)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userRec, nil
+}
+
+// Create user
+func (c *Client) CreateUser(uid string, firstName string, lastName string) (*UserRecord, error) {
+	var options = map[string]interface{}{
+		"givenname": firstName,
+		"sn": lastName}
+
+	res, err := c.rpc("user_add", []string{uid}, options)
 
 	if err != nil {
 		return nil, err

@@ -31,7 +31,76 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestUserShow(t *testing.T) {
+func TestCreateUser(t *testing.T) {
+	c := newClient()
+	user := os.Getenv("GOIPA_ADMIN_USER")
+	pass := os.Getenv("GOIPA_ADMIN_PASSWD")
+	sess, err := c.Login(user, pass)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(sess) == 0 {
+		t.Error(err)
+	}
+
+	createUid := os.Getenv("GOIPA_CREATE_USER_UID")
+	createFirst := os.Getenv("GOIPA_CREATE_USER_FIRST")
+	createLast := os.Getenv("GOIPA_CREATE_USER_LAST")
+
+	rec, err := c.CreateUser(createUid, createFirst, createLast)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(rec.Uid) != createUid {
+		t.Errorf("Invalid username")
+	}
+
+	if string(rec.First) != createFirst {
+		t.Errorf("Invalid first name")
+	}
+
+	if string(rec.Last) != createLast {
+		t.Errorf("Invalid last name")
+	}
+
+	spew.Printf("User - %#v", rec)
+}
+
+func TestUserExists(t *testing.T) {
+	c := newClient()
+
+	user := os.Getenv("GOIPA_TEST_USER")
+	pass := os.Getenv("GOIPA_TEST_PASSWD")
+	_, err := c.Login(user, pass)
+	if err != nil {
+		t.Error(err)
+	}
+
+	exists, err := c.UserExists(user)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !exists {
+		t.Error("User should exist")
+	}
+
+	exists, err = c.UserExists("safjhkgfdhjkfsehkjfsd")
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if exists {
+		t.Error("User should not exist")
+	}
+}
+
+func TestGetUser(t *testing.T) {
 	c := newClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
@@ -42,7 +111,7 @@ func TestUserShow(t *testing.T) {
 	}
 
 	// Test using ipa_session
-	rec, err := c.UserShow(user)
+	rec, err := c.GetUser(user)
 
 	if err != nil {
 		t.Error(err)
@@ -58,7 +127,7 @@ func TestUserShow(t *testing.T) {
 		c.ClearSession()
 
 		// Test using keytab if set
-		rec, err := c.UserShow(user)
+		rec, err := c.GetUser(user)
 
 		if err != nil || rec == nil {
 			t.Error(err)
@@ -135,7 +204,7 @@ func TestUpdateMobile(t *testing.T) {
 		t.Error(err)
 	}
 
-	rec, err := c.UserShow(user)
+	rec, err := c.GetUser(user)
 	if err != nil {
 		t.Error(err)
 	}
@@ -156,7 +225,7 @@ func TestUserAuthTypes(t *testing.T) {
 			t.Error(err)
 		}
 
-		rec, err := c.UserShow(user)
+		rec, err := c.GetUser(user)
 		if err != nil {
 			t.Error(err)
 		}
