@@ -7,6 +7,7 @@ package ipa
 import (
 	"os"
 	"testing"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func newClient() *Client {
@@ -50,6 +51,8 @@ func TestUserShow(t *testing.T) {
 	if string(rec.Uid) != user {
 		t.Errorf("Invalid user")
 	}
+
+	spew.Printf("User - %#v", rec)
 
 	if len(os.Getenv("GOIPA_TEST_KEYTAB")) > 0 {
 		c.ClearSession()

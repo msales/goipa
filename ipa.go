@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ubccr/kerby/khttp"
+	"github.com/tustvold/kerby/khttp"
 )
 
 const (
