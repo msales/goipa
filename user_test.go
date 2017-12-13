@@ -7,18 +7,10 @@ package ipa
 import (
 	"os"
 	"testing"
-	"github.com/davecgh/go-spew/spew"
 )
 
-func newClient() *Client {
-	host := os.Getenv("GOIPA_TEST_HOST")
-	keytab := os.Getenv("GOIPA_TEST_KEYTAB")
-
-	return &Client{KeyTab: keytab, Host: host}
-}
-
 func TestLogin(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")
 	sess, err := c.Login(user, pass)
@@ -31,8 +23,8 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestCreateUser(t *testing.T) {
-	c := newClient()
+func TestCreateDeleteUser(t *testing.T) {
+	c := newTestClient()
 	user := os.Getenv("GOIPA_ADMIN_USER")
 	pass := os.Getenv("GOIPA_ADMIN_PASSWD")
 	sess, err := c.Login(user, pass)
@@ -66,11 +58,21 @@ func TestCreateUser(t *testing.T) {
 		t.Errorf("Invalid last name")
 	}
 
-	spew.Printf("User - %#v", rec)
+	err = c.UpdateEmail(createUid, "test@five.ai")
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = c.DeleteUser(createUid)
+
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestUserExists(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")
@@ -101,7 +103,7 @@ func TestUserExists(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")
@@ -121,8 +123,6 @@ func TestGetUser(t *testing.T) {
 		t.Errorf("Invalid user")
 	}
 
-	spew.Printf("User - %#v", rec)
-
 	if len(os.Getenv("GOIPA_TEST_KEYTAB")) > 0 {
 		c.ClearSession()
 
@@ -140,7 +140,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestUpdateSSHPubKeys(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")
@@ -185,7 +185,7 @@ func TestUpdateSSHPubKeys(t *testing.T) {
 }
 
 func TestUpdateMobile(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")
@@ -216,7 +216,7 @@ func TestUpdateMobile(t *testing.T) {
 
 func TestUserAuthTypes(t *testing.T) {
 	if len(os.Getenv("GOIPA_TEST_KEYTAB")) > 0 {
-		c := newClient()
+		c := newTestClient()
 
 		user := os.Getenv("GOIPA_TEST_USER")
 

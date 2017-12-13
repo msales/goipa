@@ -10,7 +10,7 @@ import (
 )
 
 func TestAddTOTPToken(t *testing.T) {
-	c := newClient()
+	c := newTestClient()
 
 	user := os.Getenv("GOIPA_TEST_USER")
 	pass := os.Getenv("GOIPA_TEST_PASSWD")

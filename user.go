@@ -43,6 +43,7 @@ type UserRecord struct {
 	LastLoginSuccess IpaDateTime `json:"krblastsuccessfulauth"`
 	LastLoginFail    IpaDateTime `json:"krblastfailedauth"`
 	Randompassword   string      `json:"randompassword"`
+	IpaUniqueId      IpaString   `json:"ipauniqueid"`
 }
 
 // Returns true if OTP is the only authentication type enabled
@@ -97,7 +98,6 @@ func (c *Client) GetUser(uid string) (*UserRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &userRec, nil
 }
 
@@ -105,7 +105,7 @@ func (c *Client) GetUser(uid string) (*UserRecord, error) {
 func (c *Client) CreateUser(uid string, firstName string, lastName string) (*UserRecord, error) {
 	var options = map[string]interface{}{
 		"givenname": firstName,
-		"sn": lastName}
+		"sn":        lastName}
 
 	res, err := c.rpc("user_add", []string{uid}, options)
 
@@ -120,6 +120,30 @@ func (c *Client) CreateUser(uid string, firstName string, lastName string) (*Use
 	}
 
 	return &userRec, nil
+}
+
+// Delete user
+func (c *Client) DeleteUser(uid string) (error) {
+	var options = map[string]interface{}{
+		"continue": false,
+		"preserve": false,
+		"version":  "2.164"}
+
+	_, err := c.rpc("user_del", []string{uid}, options)
+
+	return err
+}
+
+// Delete user
+func (c *Client) PreserveUser(uid string) (error) {
+	var options = map[string]interface{}{
+		"continue": false,
+		"preserve": true,
+		"version":  "2.164"}
+
+	_, err := c.rpc("user_del", []string{uid}, options)
+
+	return err
 }
 
 // Update ssh public keys for user uid. Returns the fingerprints on success.
@@ -144,21 +168,29 @@ func (c *Client) UpdateSSHPubKeys(uid string, keys []string) ([]string, error) {
 	return userRec.SSHPubKeyFps, nil
 }
 
-// Update mobile number. Currently will store only a single number. Any
-// existing numbers will be overwritten.
-func (c *Client) UpdateMobileNumber(uid string, number string) error {
+func (c *Client) UserMod(uid string, key string, value string) error {
 	options := map[string]interface{}{
 		"no_members": false,
-		"mobile":     []string{number},
+		key:     []string{value},
 		"all":        false}
 
 	_, err := c.rpc("user_mod", []string{uid}, options)
 
-	if err != nil {
-		return err
-	}
+	return err
+}
 
-	return nil
+// Update mobile number. Currently will store only a single number. Any
+// existing numbers will be overwritten.
+func (c *Client) UpdateMobileNumber(uid string, number string) error {
+	return c.UserMod(uid, "mobile", number)
+}
+
+func (c *Client) UpdateEmail(uid string, email string) error {
+	return c.UserMod(uid, "mail", email)
+}
+
+func (c *Client) UpdateShell(uid string, email string) error {
+	return c.UserMod(uid, "loginshell", email)
 }
 
 // Reset user password and return new random password
