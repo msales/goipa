@@ -101,6 +101,34 @@ func (c *Client) GetUser(uid string) (*UserRecord, error) {
 	return &userRec, nil
 }
 
+// Fetch user details by call the FreeIPA user-show method
+func (c *Client) GetUserByUidNumber(uidNumber string) (*UserRecord, error) {
+
+	options := map[string]interface{}{
+		"no_members": false,
+		"all":        true,
+		"uidnumber":  uidNumber,
+		"version": "2.228"}
+
+	res, err := c.rpc("user_find", []string{}, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var userRec []UserRecord
+	err = json.Unmarshal(res.Result.Data, &userRec)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(userRec) != 1 {
+		return nil, errors.New("too many records returned")
+	}
+
+	return &userRec[0], nil
+}
+
 // Create user
 func (c *Client) CreateUser(uid string, firstName string, lastName string) (*UserRecord, error) {
 	var options = map[string]interface{}{
@@ -171,7 +199,7 @@ func (c *Client) UpdateSSHPubKeys(uid string, keys []string) ([]string, error) {
 func (c *Client) UserMod(uid string, key string, value string) error {
 	options := map[string]interface{}{
 		"no_members": false,
-		key:     []string{value},
+		key:          []string{value},
 		"all":        false}
 
 	_, err := c.rpc("user_mod", []string{uid}, options)

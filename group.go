@@ -4,7 +4,10 @@
 
 package ipa
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type GroupRecord struct {
 	Dn           string    `json:"dn"`
@@ -14,6 +17,7 @@ type GroupRecord struct {
 	MepManagedBy IpaString `json:"mepmanagedby"`
 	IpaUniqueId  IpaString `json:"ipauniqueid"`
 	Users        []string  `json:"member_user"`
+	HbacRules    []string  `json:"memberof_hbacrule"`
 }
 
 // Fetch user details by calling the FreeIPA group-show method
@@ -34,6 +38,35 @@ func (c *Client) GetGroup(gid string) (*GroupRecord, error) {
 		return nil, err
 	}
 	return &groupRec, nil
+}
+
+// This doesn't work for primary groups - this appears to be a deficiency
+// in FreeIPA as it also doesn't work from the ipa CLI
+func (c *Client) GetGroupByGidNumber(gidNumber string) (*GroupRecord, error) {
+
+	options := map[string]interface{}{
+		"no_members": false,
+		"all":        true,
+		"gidnumber":  gidNumber,
+		"version":    "2.228"}
+
+	res, err := c.rpc("group_find", []string{}, options)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var groupRec []GroupRecord
+	err = json.Unmarshal(res.Result.Data, &groupRec)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(groupRec) != 1 {
+		return nil, errors.New("too many records returned")
+	}
+
+	return &groupRec[0], nil
 }
 
 func (c *Client) GroupExists(uid string) (bool, error) {

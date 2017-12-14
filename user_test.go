@@ -58,6 +58,16 @@ func TestCreateDeleteUser(t *testing.T) {
 		t.Errorf("Invalid last name")
 	}
 
+	rec2, err := c.GetUserByUidNumber(string(rec.UidNumber))
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if rec2.Uid != rec.Uid {
+		t.Errorf("Equality Failure")
+	}
+
 	err = c.UpdateEmail(createUid, "test@five.ai")
 
 	if err != nil {

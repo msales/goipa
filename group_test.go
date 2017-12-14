@@ -110,6 +110,16 @@ func TestCreateDeleteGroup(t *testing.T) {
 		t.Errorf("Invalid group")
 	}
 
+	rec2, err := c.GetGroupByGidNumber(string(rec.GidNumber))
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if rec2.Gid != rec.Gid {
+		t.Errorf("Equality Failure")
+	}
+
 	err = c.DeleteGroup("test_group")
 	if err != nil {
 		t.Error(err)
