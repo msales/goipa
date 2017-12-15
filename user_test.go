@@ -68,7 +68,7 @@ func TestCreateDeleteUser(t *testing.T) {
 		t.Errorf("Equality Failure")
 	}
 
-	err = c.UpdateEmail(createUid, "test@five.ai")
+	err = c.UserUpdateEmail(createUid, "test@five.ai")
 
 	if err != nil {
 		t.Error(err)
@@ -204,12 +204,12 @@ func TestUpdateMobile(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = c.UpdateMobileNumber(user, "")
+	err = c.UserUpdateMobileNumber(user, "")
 	if err != nil {
 		t.Error("Failed to remove existing mobile number")
 	}
 
-	err = c.UpdateMobileNumber(user, "+9999999999")
+	err = c.UserUpdateMobileNumber(user, "+9999999999")
 	if err != nil {
 		t.Error(err)
 	}

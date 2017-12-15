@@ -1,7 +1,3 @@
-// Copyright 2015 Andrew E. Bruno. All rights reserved.
-// Use of this source code is governed by a BSD style
-// license that can be found in the LICENSE file.
-
 package ipa
 
 import (
@@ -85,8 +81,8 @@ func (c *Client) GroupExists(uid string) (bool, error) {
 
 func (c *Client) GroupAddMember(gid string, memberId string, memberType string) (error) {
 	options := map[string]interface{}{
-		"raw": true,
-		"all": true,
+		"raw":      true,
+		"all":      true,
 		memberType: memberId}
 
 	_, err := c.rpc("group_add_member", []string{gid}, options)
@@ -95,28 +91,49 @@ func (c *Client) GroupAddMember(gid string, memberId string, memberType string) 
 }
 
 func (c *Client) GroupRemoveMembers(gid string, members []string, memberType string) (error) {
-
 	options := map[string]interface{}{
-		"all": false,
+		"all":        false,
 		"no_members": false,
-		"raw": false,
-		memberType: members,
-		"version": "2.164"}
+		"raw":        false,
+		memberType:   members,
+		"version":    "2.164"}
 
 	_, err := c.rpc("group_remove_member", []string{gid}, options)
 
 	return err
 }
 
+func (c *Client) GroupMod(gid string, key string, value string) error {
+	options := map[string]interface{}{
+		key:       value,
+		"version": "2.228"}
+
+	_, err := c.rpc("group_mod", []string{gid}, options)
+
+	return err
+}
+
+func (c *Client) GroupUpdateGid(oldGid string, newGid string) error {
+	return c.GroupMod(oldGid, "rename", newGid)
+}
+
+func (c *Client) GroupUpdateGidNumber(gid string, gidNumber string) error {
+	return c.GroupMod(gid, "gidnumber", gidNumber)
+}
+
+func (c *Client) GroupUpdateDescription(gid string, description string) error {
+	return c.GroupMod(gid, "description", description)
+}
+
 func (c *Client) GroupRemoveMember(gid string, member string, memberType string) (error) {
 	return c.GroupRemoveMembers(gid, []string{member}, memberType)
 }
 
-func (c * Client) GroupRemoveUser(gid string, uid string) (error) {
+func (c *Client) GroupRemoveUser(gid string, uid string) (error) {
 	return c.GroupRemoveMember(gid, uid, "user")
 }
 
-func (c * Client) GroupRemoveUsers(gid string, uids []string)(error) {
+func (c *Client) GroupRemoveUsers(gid string, uids []string) (error) {
 	return c.GroupRemoveMembers(gid, uids, "user")
 }
 
@@ -124,13 +141,11 @@ func (c *Client) GroupAddUser(gid string, uid string) (error) {
 	return c.GroupAddMember(gid, uid, "user")
 }
 
-func (c *Client) CreateGroup(gid string, description string, gidnumber string) (*GroupRecord, error) {
-	options := map[string]interface{}{
-		"all":        true,
-		"description": description}
-	if len(gidnumber) > 0 {
-		options["gidnumber"] = gidnumber
-	}
+func (c *Client) CreateGroup(gid string, description string, options map[string]interface{}) (*GroupRecord, error) {
+	options["all"] = true
+	options["description"] = description
+	options["version"] = "2.228"
+	options["no_members"] = false
 
 	res, err := c.rpc("group_add", []string{gid}, options)
 

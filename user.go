@@ -35,8 +35,8 @@ type UserRecord struct {
 	Email            IpaString   `json:"mail"`
 	Mobile           IpaString   `json:"mobile"`
 	Shell            IpaString   `json:"loginshell"`
-	SudoRules        IpaString   `json:"memberofindirect_sudorule"`
-	HbacRules        IpaString   `json:"memberofindirect_hbacrule"`
+	SudoRules        []string    `json:"memberofindirect_sudorule"`
+	HbacRules        []string    `json:"memberofindirect_hbacrule"`
 	LastPasswdChange IpaDateTime `json:"krblastpwdchange"`
 	PasswdExpire     IpaDateTime `json:"krbpasswordexpiration"`
 	PrincipalExpire  IpaDateTime `json:"krbprincipalexpiration"`
@@ -108,7 +108,7 @@ func (c *Client) GetUserByUidNumber(uidNumber string) (*UserRecord, error) {
 		"no_members": false,
 		"all":        true,
 		"uidnumber":  uidNumber,
-		"version": "2.228"}
+		"version":    "2.228"}
 
 	res, err := c.rpc("user_find", []string{}, options)
 
@@ -130,10 +130,10 @@ func (c *Client) GetUserByUidNumber(uidNumber string) (*UserRecord, error) {
 }
 
 // Create user
-func (c *Client) CreateUser(uid string, firstName string, lastName string) (*UserRecord, error) {
-	var options = map[string]interface{}{
-		"givenname": firstName,
-		"sn":        lastName}
+func (c *Client) CreateUser(uid string, firstName string, lastName string, options map[string]interface{}) (*UserRecord, error) {
+	options["givenname"] = firstName
+	options["sn"] = lastName
+	options["version"] = "2.228"
 
 	res, err := c.rpc("user_add", []string{uid}, options)
 
@@ -198,27 +198,44 @@ func (c *Client) UpdateSSHPubKeys(uid string, keys []string) ([]string, error) {
 
 func (c *Client) UserMod(uid string, key string, value string) error {
 	options := map[string]interface{}{
-		"no_members": false,
-		key:          []string{value},
-		"all":        false}
+		key:       value,
+		"version": "2.228"}
 
 	_, err := c.rpc("user_mod", []string{uid}, options)
 
 	return err
 }
 
-// Update mobile number. Currently will store only a single number. Any
-// existing numbers will be overwritten.
-func (c *Client) UpdateMobileNumber(uid string, number string) error {
+func (c *Client) UserUpdateMobileNumber(uid string, number string) error {
 	return c.UserMod(uid, "mobile", number)
 }
 
-func (c *Client) UpdateEmail(uid string, email string) error {
+func (c *Client) UserUpdateEmail(uid string, email string) error {
 	return c.UserMod(uid, "mail", email)
 }
 
-func (c *Client) UpdateShell(uid string, email string) error {
+func (c *Client) UserUpdateShell(uid string, email string) error {
 	return c.UserMod(uid, "loginshell", email)
+}
+
+func (c *Client) UserUpdateUid(oldUid string, newUid string) error {
+	return c.UserMod(oldUid, "rename", newUid)
+}
+
+func (c *Client) UserUpdateUidNumber(uid string, uidNumber string) error {
+	return c.UserMod(uid, "uidnumber", uidNumber)
+}
+
+func (c *Client) UserUpdateGidNumber(uid string, gidNumber string) error {
+	return c.UserMod(uid, "gidnumber", gidNumber)
+}
+
+func (c *Client) UserUpdateFirstName(uid string, firstName string) error {
+	return c.UserMod(uid, "givenname", firstName)
+}
+
+func (c *Client) UserUpdateLastName(uid string, lastName string) error {
+	return c.UserMod(uid, "sn", lastName)
 }
 
 // Reset user password and return new random password
@@ -329,6 +346,50 @@ func (c *Client) SetAuthTypes(uid string, types []string) error {
 
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// difference returns the elements in a that aren't in b
+// from - https://stackoverflow.com/questions/19374219
+func difference(a, b []string) []string {
+	mb := map[string]bool{}
+	for _, x := range b {
+		mb[x] = true
+	}
+	var ab []string
+	for _, x := range a {
+		if _, ok := mb[x]; !ok {
+			ab = append(ab, x)
+		}
+	}
+	return ab
+}
+
+func (c *Client) UserSyncGroups(uid string, desired []string) (error) {
+	rec, err := c.GetUser(uid)
+	if err != nil {
+		return err
+	}
+
+	current := rec.Groups
+
+	toAdd := difference(desired, current)
+	toRemove := difference(current, desired)
+
+	for _, group := range toAdd {
+		err = c.GroupAddUser(group, uid)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, group := range toRemove {
+		err = c.GroupRemoveUser(group, uid)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
