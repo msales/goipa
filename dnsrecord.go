@@ -193,7 +193,9 @@ func (c *Client) CreateDNSRecord(options map[string]interface{}) (*DNSRecord, er
 // Delete DNS Record
 func (c *Client) DeleteDNSRecord(rec, zone string) error {
 	var options = map[string]interface{}{
-		"version": "2.231"}
+		"version": "2.231",
+		"all":     true,
+	}
 
 	_, err := c.rpc("dnsrecord_del", []string{zone, rec}, options)
 
