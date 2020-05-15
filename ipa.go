@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,8 +63,20 @@ type IpaError struct {
 	Code    int
 }
 
+// Custom FreeIPA bool type
+type IpaBool bool
+
 // Custom FreeIPA string type
 type IpaString string
+
+// Custom FreeIPA int type
+type IpaInt int
+
+// Custom FreeIPA float64 type
+type IpaFloat float64
+
+// Custom FreeIPA DNSName type
+type IpaDNSName string
 
 // Custom FreeIPA datetime type
 type IpaDateTime time.Time
@@ -162,6 +175,100 @@ func (s *IpaString) UnmarshalJSON(b []byte) error {
 
 func (s *IpaString) String() string {
 	return string(*s)
+}
+
+// Unmarshal a FreeIPA string from an array of strings. Uses the first value
+// in the array as the value of the string.
+func (s *IpaDNSName) UnmarshalJSON(b []byte) error {
+	var a []map[string]string
+	err := json.Unmarshal(b, &a)
+	if err != nil {
+		return err
+	}
+
+	if len(a) == 0 {
+		return nil
+	}
+
+	*s = IpaDNSName(a[0]["__dns_name__"])
+
+	return nil
+}
+
+func (s *IpaDNSName) String() string {
+	return string(*s)
+}
+
+// Unmarshal a FreeIPA Int from an array of strings. Uses the first value
+// in the array as the value of the string.
+func (s *IpaInt) UnmarshalJSON(b []byte) error {
+	var a []string
+	err := json.Unmarshal(b, &a)
+	if err != nil {
+		return err
+	}
+	if len(a) == 0 {
+		return nil
+	}
+
+	val, err := strconv.Atoi(a[0])
+	if err != nil {
+		return err
+	}
+	*s = IpaInt(val)
+
+	return nil
+}
+
+// Unmarshal a FreeIPA Float from an array of strings. Uses the first value
+// in the array as the value of the string.
+func (s *IpaFloat) UnmarshalJSON(b []byte) error {
+	var a []string
+	err := json.Unmarshal(b, &a)
+	if err != nil {
+		return err
+	}
+	if len(a) == 0 {
+		return nil
+	}
+
+	val, err := strconv.ParseFloat(a[0], 64)
+	if err != nil {
+		return err
+	}
+	*s = IpaFloat(val)
+
+	return nil
+}
+
+// Unmarshal a FreeIPA DNS Name from an array of strings. Uses the first value
+// in the array as the value of the bool.
+func (s *IpaBool) UnmarshalJSON(b []byte) error {
+	var a []string
+	err := json.Unmarshal(b, &a)
+	if err != nil {
+		return err
+	}
+
+	if len(a) == 0 {
+		return nil
+	}
+	*s = IpaBool(s.parseBool(a[0]))
+
+	return nil
+}
+
+// Unmarshal a FreeIPA bool from an array of strings. Uses the first value
+// in the array as the value of the bool.
+func (s *IpaBool) parseBool(val string) bool {
+	switch val {
+	case "TRUE":
+		return true
+	case "FALSE":
+		return false
+	default:
+		return false
+	}
 }
 
 func (e *IpaError) Error() string {
