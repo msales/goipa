@@ -151,7 +151,7 @@ func (c *Client) CreateUser(uid string, firstName string, lastName string, optio
 }
 
 // Delete user
-func (c *Client) DeleteUser(uid string) (error) {
+func (c *Client) DeleteUser(uid string) error {
 	var options = map[string]interface{}{
 		"continue": false,
 		"preserve": false,
@@ -163,7 +163,7 @@ func (c *Client) DeleteUser(uid string) (error) {
 }
 
 // Delete user
-func (c *Client) PreserveUser(uid string) (error) {
+func (c *Client) PreserveUser(uid string) error {
 	var options = map[string]interface{}{
 		"continue": false,
 		"preserve": true,
@@ -306,7 +306,7 @@ func (c *Client) SetPassword(uid, old_passwd, new_passwd, otpcode string) error 
 	req.Header.Set("Referer", fmt.Sprintf("https://%s/ipa", c.Host))
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool}}
+		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool, InsecureSkipVerify: c.Insecure}}
 	client := &http.Client{Transport: tr}
 
 	res, err := client.Do(req)
@@ -367,7 +367,7 @@ func difference(a, b []string) []string {
 	return ab
 }
 
-func (c *Client) UserSyncGroups(uid string, desired []string) (error) {
+func (c *Client) UserSyncGroups(uid string, desired []string) error {
 	rec, err := c.GetUser(uid)
 	if err != nil {
 		return err

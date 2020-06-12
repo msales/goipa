@@ -34,10 +34,11 @@ var (
 
 // FreeIPA Client
 type Client struct {
-	Host    string
-	CaCert  string
-	KeyTab  string
-	session string
+	Host     string
+	CaCert   string
+	KeyTab   string
+	Insecure bool
+	session  string
 }
 
 // FreeIPA Password Policy Error
@@ -203,7 +204,7 @@ func (c *Client) rpc(method string, params []string, options map[string]interfac
 	req.Header.Set("Referer", fmt.Sprintf("https://%s/ipa", c.Host))
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool}}
+		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool, InsecureSkipVerify: c.Insecure}}
 
 	client := &http.Client{Transport: tr}
 
@@ -269,7 +270,7 @@ func (c *Client) Login(uid, passwd string) (string, error) {
 	req.Header.Set("Referer", fmt.Sprintf("https://%s/ipa", c.Host))
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool}}
+		TLSClientConfig: &tls.Config{RootCAs: ipaCertPool, InsecureSkipVerify: c.Insecure}}
 	client := &http.Client{Transport: tr}
 
 	res, err := client.Do(req)
